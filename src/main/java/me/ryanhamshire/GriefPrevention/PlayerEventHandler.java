@@ -1200,8 +1200,24 @@ class PlayerEventHandler implements Listener
         }
         
         //don't allow interaction with item frames or armor stands in claimed areas without build permission
+        // (or container permission instead, if configured that way)
 		if(entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging)
 		{
+                    if (instance.config_claims_containerTrustForItemFrames)
+                    {
+                        // Config says only container permission required to
+                        // interact, check for that
+                        Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
+                        String noContainersReason = claim.allowContainers(player);
+                        if(noContainersReason != null)
+                        {
+                            instance.sendMessage(player, TextMode.Err, noContainersReason);
+                            event.setCancelled(true);
+                            return;
+                        }
+
+                    } else {
+                        // Require build permission at this location
 			String noBuildReason = instance.allowBuild(player, entity.getLocation(), Material.ITEM_FRAME); 
 			if(noBuildReason != null)
 			{
@@ -1209,6 +1225,8 @@ class PlayerEventHandler implements Listener
 				event.setCancelled(true);
 				return;
 			}			
+                    }
+
 		}
 		
 		//limit armor placements when entity count is too high
